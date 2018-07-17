@@ -1,0 +1,31 @@
+test compile
+
+target x86_64
+
+function u0:0(i64, i64, i64) system_v {
+    ss1 = explicit_slot 8
+    ss2 = explicit_slot 8
+    ss3 = explicit_slot 1
+    ss4 = explicit_slot 1
+
+ebb0(v0: i64, v1: i64, v2: i64):
+    v3 = stack_addr.i64 ss1
+    store v1, v3
+    v4 = stack_addr.i64 ss2
+    store v2, v4
+    v5 = stack_addr.i64 ss3
+    v6 = stack_addr.i64 ss4
+
+    v7 = load.i64 v3
+    v8 = load.i8 v7
+    store v8, v5
+    v9 = load.i64 v4
+    v10 = load.i8 v9
+    store v10, v6
+    v11 = load.i8 v5
+    v12 = load.i8 v6
+    v13 = icmp sle v11, v12
+    v14 = bint.i8 v13
+    store v14, v0
+    return
+}
