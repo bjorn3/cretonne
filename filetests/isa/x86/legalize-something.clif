@@ -1,0 +1,33 @@
+test compile
+
+target x86_64
+
+function u0:5(i64, i64, i64) system_v {
+    ss0 = explicit_slot 0
+    ss1 = explicit_slot 8
+    ss2 = explicit_slot 8
+    ss3 = explicit_slot 8
+    ss4 = explicit_slot 8
+    ss5 = explicit_slot 1
+
+ebb0(v0: i64, v1: i64, v2: i64):
+    stack_store v1, ss1
+    stack_store v2, ss2
+    stack_store v1, ss3
+    stack_store v2, ss4
+    v10 = stack_load.i64 ss4
+    v11 = iconst.i64 0
+    v12 = icmp eq v10, v11
+    v13 = bint.i8 v12
+    stack_store v13, ss5
+    v14 = stack_load.i8 ss5
+    brnz v14, ebb2
+    trap user65535
+
+ebb2:
+    v15 = stack_load.i64 ss3
+    v16 = stack_load.i64 ss4
+    v17 = udiv v15, v16
+    store v17, v0
+    return
+}

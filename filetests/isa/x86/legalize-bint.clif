@@ -1,0 +1,13 @@
+test compile
+
+target x86_64
+
+function u0:5(i64) system_v {
+ebb0(v0: i64):
+    v1 = iconst.i8 1
+    v2 = iconst.i8 2
+    v3 = icmp eq v1, v2
+    v4 = bint.i8 v3
+    store v4, v0
+    return
+}
