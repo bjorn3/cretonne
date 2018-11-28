@@ -28,12 +28,15 @@ extern crate alloc;
 
 mod backend;
 mod data_context;
+mod debug_context;
 mod module;
 
 pub use crate::backend::Backend;
 pub use crate::data_context::{DataContext, DataDescription, Init};
+pub use crate::debug_context::{DebugContext, DebugReloc};
 pub use crate::module::{
-    DataId, FuncId, FuncOrDataId, Linkage, Module, ModuleError, ModuleNamespace, ModuleResult,
+    DataId, DebugId, DebugRelocation, FuncId, FuncOrDataId, Linkage, Module, ModuleError,
+    ModuleNamespace, ModuleResult,
 };
 
 /// This replaces `std` in builds with `core`.
