@@ -6,6 +6,7 @@
 // shared with `DataContext`?
 
 use crate::data_context::DataContext;
+use crate::debug_context::DebugSectionContext;
 use crate::Backend;
 use cranelift_codegen::entity::{entity_impl, PrimaryMap};
 use cranelift_codegen::{binemit, ir, isa, CodegenError, Context};
@@ -16,8 +17,6 @@ use std::borrow::ToOwned;
 use std::collections::HashMap;
 use std::string::String;
 use std::vec::Vec;
-
-use crate::debug_context::DebugContext;
 
 /// A function identifier for use in the `Module` interface.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -51,12 +50,12 @@ impl From<DataId> for ir::ExternalName {
 
 /// A debug section identifier for use in the `Module` interface.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct DebugId(u32);
-entity_impl!(DebugId, "debugid");
+pub struct DebugSectionId(u32);
+entity_impl!(DebugSectionId, "debugsectionid");
 
 /// Debug section identifiers are namespace 2 in `ir::ExternalName`
-impl From<DebugId> for ir::ExternalName {
-    fn from(id: DebugId) -> Self {
+impl From<DebugSectionId> for ir::ExternalName {
+    fn from(id: DebugSectionId) -> Self {
         ir::ExternalName::User {
             namespace: 2,
             index: id.0,
@@ -119,8 +118,8 @@ pub enum FuncOrDataId {
     Func(FuncId),
     /// When it's a DataId
     Data(DataId),
-    /// When it's a DebugId
-    Debug(DebugId),
+    /// When it's a DebugSectionId
+    DebugSection(DebugSectionId),
 }
 
 /// Mapping to `ir::ExternalName` is a trivial map of the individual variants.
@@ -129,7 +128,7 @@ impl From<FuncOrDataId> for ir::ExternalName {
         match id {
             FuncOrDataId::Func(funcid) => Self::from(funcid),
             FuncOrDataId::Data(dataid) => Self::from(dataid),
-            FuncOrDataId::Debug(debugid) => Self::from(debugid),
+            FuncOrDataId::DebugSection(id) => Self::from(id),
         }
     }
 }
@@ -260,7 +259,7 @@ where
 {
     functions: PrimaryMap<FuncId, ModuleFunction<B>>,
     data_objects: PrimaryMap<DataId, ModuleData<B>>,
-    debug_sections: PrimaryMap<DebugId, ModuleDebug>,
+    debug_sections: PrimaryMap<DebugSectionId, ModuleDebug>,
 }
 
 impl<B> ModuleContents<B>
@@ -291,7 +290,7 @@ where
     fn get_debug_info(&self, name: &ir::ExternalName) -> &ModuleDebug {
         if let ir::ExternalName::User { namespace, index } = *name {
             debug_assert_eq!(namespace, 2);
-            let data = DebugId::new(index as usize);
+            let data = DebugSectionId::new(index as usize);
             &self.debug_sections[data]
         } else {
             panic!("unexpected ExternalName kind {}", name)
@@ -543,13 +542,13 @@ where
     }
 
     /// Declare a debug section in this module.
-    pub fn declare_debug(&mut self, name: &str) -> ModuleResult<DebugId> {
+    pub fn declare_debug_section(&mut self, name: &str) -> ModuleResult<DebugSectionId> {
         // TODO: Can we avoid allocating names so often?
         use std::collections::hash_map::Entry::*;
         match self.names.entry(name.to_owned()) {
             Occupied(entry) => match *entry.get() {
-                FuncOrDataId::Debug(id) => {
-                    self.backend.declare_debug(name);
+                FuncOrDataId::DebugSection(id) => {
+                    self.backend.declare_debug_section(name);
                     Ok(id)
                 }
 
@@ -561,8 +560,8 @@ where
                         name: name.to_owned(),
                     },
                 });
-                entry.insert(FuncOrDataId::Debug(id));
-                self.backend.declare_debug(name);
+                entry.insert(FuncOrDataId::DebugSection(id));
+                self.backend.declare_debug_section(name);
                 Ok(id)
             }
         }
@@ -664,9 +663,13 @@ where
     }
 
     /// Define a debug section.
-    pub fn define_debug(&mut self, debug: DebugId, debug_ctx: DebugContext) -> ModuleResult<()> {
+    pub fn define_debug_section(
+        &mut self,
+        debug: DebugSectionId,
+        debug_ctx: DebugSectionContext,
+    ) -> ModuleResult<()> {
         let info = &self.contents.debug_sections[debug];
-        self.backend.define_debug(
+        self.backend.define_debug_section(
             &info.decl.name,
             debug_ctx,
             &ModuleNamespace::<B> {

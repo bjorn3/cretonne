@@ -33,9 +33,9 @@ mod module;
 
 pub use crate::backend::Backend;
 pub use crate::data_context::{DataContext, DataDescription, Init};
-pub use crate::debug_context::{DebugContext, DebugReloc};
+pub use crate::debug_context::{DebugReloc, DebugSectionContext};
 pub use crate::module::{
-    DataId, DebugId, DebugRelocation, FuncId, FuncOrDataId, Linkage, Module, ModuleError,
+    DataId, DebugRelocation, DebugSectionId, FuncId, FuncOrDataId, Linkage, Module, ModuleError,
     ModuleNamespace, ModuleResult,
 };
 
