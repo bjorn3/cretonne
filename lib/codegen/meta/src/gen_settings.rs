@@ -187,10 +187,10 @@ fn gen_getters(group: &SettingGroup, fmt: &mut Formatter) {
     fmt.line("impl Flags {");
     fmt.indent(|fmt| {
         fmt.doc_comment("Get a view of the boolean predicates.");
-        fmt.line("pub fn predicate_view(&self) -> ::settings::PredicateView {");
+        fmt.line("pub fn predicate_view(&self) -> crate::settings::PredicateView {");
         fmt.indent(|fmt| {
             fmt.line(&format!(
-                "::settings::PredicateView::new(&self.bytes[{}..])",
+                "crate::settings::PredicateView::new(&self.bytes[{}..])",
                 group.bool_start_byte_offset
             ));
         });
@@ -341,7 +341,7 @@ fn gen_descriptors(group: &SettingGroup, fmt: &mut Formatter) {
     // Generate presets.
     fmt.line(&format!(
         "static PRESETS: [(u8, u8); {}] = [",
-        group.presets.len()
+        group.presets.iter().map(|preset| preset.layout(&group).len()).sum::<usize>()
     ));
     fmt.indent(|fmt| {
         for preset in &group.presets {
