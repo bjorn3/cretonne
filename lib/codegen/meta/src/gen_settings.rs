@@ -341,7 +341,11 @@ fn gen_descriptors(group: &SettingGroup, fmt: &mut Formatter) {
     // Generate presets.
     fmt.line(&format!(
         "static PRESETS: [(u8, u8); {}] = [",
-        group.presets.iter().map(|preset| preset.layout(&group).len()).sum::<usize>()
+        group
+            .presets
+            .iter()
+            .map(|preset| preset.layout(&group).len())
+            .sum::<usize>()
     ));
     fmt.indent(|fmt| {
         for preset in &group.presets {
