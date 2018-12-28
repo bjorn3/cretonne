@@ -53,6 +53,7 @@ use crate::entity::packed_option;
 use std::borrow::BorrowMut;
 use std::cmp::Ordering;
 
+pub mod constant_hash;
 mod map;
 mod node;
 mod path;

@@ -73,19 +73,25 @@ impl FromStr for Opcode {
 
     /// Parse an Opcode name from a string.
     fn from_str(s: &str) -> Result<Self, &'static str> {
-        use crate::constant_hash::{probe, simple_hash, Table};
+        use cranelift_bforest::constant_hash::{probe, simple_hash, Table};
 
-        impl<'a> Table<&'a str> for [Option<Opcode>] {
+        struct OpcodeHashTable<'a>(&'a [Option<Opcode>]);
+
+        impl<'a, 'b> Table<&'a str> for OpcodeHashTable<'b> {
             fn len(&self) -> usize {
-                self.len()
+                self.0.len()
             }
 
             fn key(&self, idx: usize) -> Option<&'a str> {
-                self[idx].map(opcode_name)
+                self.0[idx].map(opcode_name)
             }
         }
 
-        match probe::<&str, [Option<Self>]>(&OPCODE_HASH_TABLE, s, simple_hash(s)) {
+        match probe::<&str, OpcodeHashTable>(
+            &OpcodeHashTable(&OPCODE_HASH_TABLE),
+            s,
+            simple_hash(s),
+        ) {
             Err(_) => Err("Unknown opcode"),
             // We unwrap here because probe() should have ensured that the entry
             // at this index is not None.
