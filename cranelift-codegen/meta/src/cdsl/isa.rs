@@ -63,6 +63,7 @@ impl TargetIsa {
     }
 }
 
+#[derive(Clone)]
 pub struct BranchRange(Vec<u64>);
 
 #[derive(Copy, Clone)]
@@ -77,6 +78,7 @@ pub enum OperandConstraint {
 ///
 /// Many different instructions can be encoded by the same recipe, but they
 /// must all have the same instruction format.
+#[derive(Clone)]
 pub struct EncRecipe {
     pub name: String,
     pub format: InstructionFormatIndex,

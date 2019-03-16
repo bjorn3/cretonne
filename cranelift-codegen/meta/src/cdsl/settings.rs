@@ -167,7 +167,7 @@ struct ProtoSetting {
     specific: ProtoSpecificSetting,
 }
 
-#[derive(Hash, PartialEq, Eq)]
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub enum PredicateNode {
     OwnedBool(BoolSettingIndex),
     SharedBool(&'static str, &'static str),

@@ -88,39 +88,133 @@ fn map_regs_norex(reg_indexes: RegIndexes, regs: &[OperandConstraint]) -> Vec<Op
 /// `EncRecipe` does it. Additionally, the text `PUT_OP` is substituted with
 /// the proper `put_*` function from the `x86/binemit.rs` module.
 struct TailRecipe {
-    name: &'static str,
-    format: InstructionFormat,
-    base_size: u64,
-    ins: Vec<OperandConstraint>,
-    outs: Vec<OperandConstraint>,
-    branch_range: Option<u64>,
-    clobbers_flags: bool,
-    instp: PredicateNode,
-    isap: PredicateNode,
+    base: EncRecipe,
     when_prefixed: Option<Box<TailRecipe>>,
     requires_prefix: bool,
-    emit: Option<&'static str>,
-    compute_size: Option<&'static str>,
 
     recipes: HashMap<String, EncRecipe>,
+}
+
+impl TailRecipe {
+    fn new(
+        name: &str,
+        formats: &FormatRegistry,
+        format: &str,
+        base_size: u64,
+        ins: Vec<OperandConstraint>,
+        outs: Vec<OperandConstraint>,
+    ) -> Self {
+        Self {
+            base: EncRecipe::new(name, formats, format, base_size, ins, outs),
+            when_prefixed: None,
+            requires_prefix: false,
+
+            recipes: HashMap::new(),
+        }
+    }
+
+    fn emit(mut self, emit: &str) -> Self {
+        self.base = self.base.emit(emit);
+        self
+    }
+
+    fn when_prefixed(self, when_prefixed: TailRecipe) -> Self {
+        Self {
+            when_prefixed: Some(Box::new(when_prefixed)),
+            ..self
+        }
+    }
+
+    fn requires_prefix(self) -> Self {
+        Self {
+            requires_prefix: true,
+            ..self
+        }
+    }
+
+    /// Create an encoding recipe and encoding bits for the opcode bytes in `ops`.
+    fn make(&mut self, ops: &[u8], rrr: u8, w: u8) -> (&EncRecipe, u16) {
+        assert!(!self.requires_prefix, "Tail recipe requires REX prefix.");
+        let (name, bits) = decode_ops(ops, rrr, w);
+        let base_size = ops.len() as u64 + self.base.base_size;
+
+        let branch_range = self.base.branch_range.clone().map(|branch_range| {
+            (base_size, branch_range)
+        });
+
+        let base = &self.base;
+        let recipe = self.recipes.entry(name.to_string()).or_insert_with(|| {
+            let mut recipe = base.clone();
+            recipe.name = name.to_string() + &base.name;
+            recipe.base_size = base_size;
+            recipe.emit = replace_put_op(base.emit.as_ref().map(|emit| emit as &str), name);
+            recipe
+        });
+
+        (recipe, bits)
+    }
+
+    /// Create a REX encoding recipe and encoding bits for the opcode bytes in
+    /// `ops`.
+    ///
+    /// The recipe will always generate a REX prefix, whether it is required or
+    /// not. For instructions that don't require a REX prefix, two encodings
+    /// should be added: One with REX and one without.
+    fn make_rex(&mut self, ops: &[u8], rrr: u8, w: u8) -> (&EncRecipe, u16) {
+        if let Some(when_prefixed) = self.when_prefixed.as_mut() {
+            return when_prefixed.make_rex(ops, rrr, w);
+        }
+
+        let (name, bits) = decode_ops(ops, rrr, w);
+        let name = "Rex".to_string() + name;
+        let base_size = 1 + ops.len() as u64 + self.base.base_size;
+
+        let branch_range = self.base.branch_range.clone().map(|branch_range| {
+            (base_size, branch_range)
+        });
+
+        let base = &self.base;
+        let recipe = self.recipes.entry(name.clone()).or_insert_with(|| {
+            let mut recipe = base.clone();
+            recipe.emit = replace_put_op(base.emit.as_ref().map(|emit| emit as &str), &name);
+            recipe.name = name + &base.name;
+            recipe.base_size = base_size;
+            recipe
+        });
+
+        (recipe, bits)
+    }
 }
 
 fn recipes(formats: &FormatRegistry, reg_indexes: RegIndexes) -> Vec<EncRecipe> {
     use crate::cdsl::isa::OperandConstraint::{RegClass, Register};
 
     let null = EncRecipe::new("null", formats, "Unary", 0, vec![RegClass(reg_indexes.gpr)], vec![]);
-    let debugtrap = EncRecipe::new("debugtrap", formats, "NullAry", 1, vec![], vec![])
-        .emit("sink.put1(0xcc);");
+    let debugtrap = EncRecipe::new("debugtrap", formats, "NullAry", 1, vec![], vec![]).emit("sink.put1(0xcc);");
+
+    let mut trap = TailRecipe::new("trap", formats, "Trap", 0, vec![], vec![])
+        .emit("
+            sink.trap(code, func.srclocs[inst]);
+            PUT_OP(bits, BASE_REX, sink);
+        ");
 
     let trapif = EncRecipe::new("trapif", formats, "IntCondTrap", 4, vec![Register(reg_indexes.rflags)], vec![])
         .emit("
-        // Jump over a 2-byte ud2.
-        sink.put1(0x70 | (icc2opc(cond.inverse()) as u8));
-        sink.put1(2);
-        // ud2.
-        sink.trap(code, func.srclocs[inst]);
-        sink.put1(0x0f);
-        sink.put1(0x0b);
+            // Jump over a 2-byte ud2.
+            sink.put1(0x70 | (icc2opc(cond.inverse()) as u8));
+            sink.put1(2);
+            // ud2.
+            sink.trap(code, func.srclocs[inst]);
+            sink.put1(0x0f);
+            sink.put1(0x0b);
+        ");
+
+    // trapff
+
+    let rr = TailRecipe::new("rr", formats, "Binary", 1, vec![RegClass(reg_indexes.gpr), RegClass(reg_indexes.gpr)], vec![])
+        .emit("
+            PUT_OP(bits, rex2(in_reg0, in_reg1), sink);
+            modrm_rr(in_reg0, in_reg1, sink);
         ");
 
     // ...
