@@ -1,6 +1,7 @@
 //! Generate binary emission code for each ISA.
 
 use crate::cdsl::isa::{EncRecipe, OperandConstraint};
+use crate::cdsl::formats::FormatRegistry;
 use crate::error;
 use crate::srcgen::Formatter;
 
@@ -10,8 +11,8 @@ use crate::srcgen::Formatter;
 /// - Determine register locations for operands with register constraints.
 /// - Determine stack slot locations for operands with stack constraints.
 /// - Call hand-written code for the actual emission.
-fn gen_recipe(recipe: &EncRecipe, fmt: &mut Formatter) {
-    let iform = &recipe.format;
+fn gen_recipe(formats: &FormatRegistry, recipe: &EncRecipe, fmt: &mut Formatter) {
+    let iform = formats.get(recipe.format);
     let nvops = iform.num_value_operands;
     let want_args = recipe.ins.iter().any(|c| match c {
         OperandConstraint::RegClass(_) | OperandConstraint::Stack(_) => true,
@@ -22,7 +23,7 @@ fn gen_recipe(recipe: &EncRecipe, fmt: &mut Formatter) {
         OperandConstraint::Register(_) | OperandConstraint::InputReference(_) => false,
     });
 
-    let is_regmove = ["RegMove", "RegSpill", "RegFill"].contains(&recipe.format.name);
+    let is_regmove = ["RegMove", "RegSpill", "RegFill"].contains(&iform.name);
 
     fmtln!(fmt, "if let InstructionData::{} {{", iform.name);
     fmt.indent(|fmt| {
@@ -71,7 +72,7 @@ fn gen_recipe(recipe: &EncRecipe, fmt: &mut Formatter) {
 
             // Special handling for regmove instructions. Update the register
             // diversion tracker
-            match &*recipe.format.name {
+            match &*iform.name {
                 "RegMove" => fmt.line("divert.regmove(arg, src, dst);"),
                 "RegSpill" => fmt.line("divert.regspill(arg, src, dst);"),
                 "RegFill" => fmt.line("divert.regfill(arg, src, dst);"),
@@ -125,7 +126,7 @@ fn unwrap_values(args: &[OperandConstraint], prefix: &str, values: &str, fmt: &m
     varlist
 }
 
-fn gen_isa(isa_name: &str, all_recipes: &[EncRecipe], fmt: &mut Formatter) {
+fn gen_isa(formats: &FormatRegistry, isa_name: &str, all_recipes: &[EncRecipe], fmt: &mut Formatter) {
     fmt.doc_comment(format!("Emit binary machine code for `inst` for the {} ISA", isa_name));
     fmt.line("#[allow(unused_variables, unreachable_code)]");
     fmt.line("pub fn emit_inst<CS: CodeSink + ?Sized>(");
@@ -149,7 +150,7 @@ fn gen_isa(isa_name: &str, all_recipes: &[EncRecipe], fmt: &mut Formatter) {
                     fmt.comment(format!("Recipe {}", recipe.name));
                     fmtln!(fmt, "{} => {{", i);
                     fmt.indent(|fmt| {
-                        gen_recipe(recipe, fmt);
+                        gen_recipe(formats, recipe, fmt);
                     });
                     fmt.line("}");
                 }
@@ -170,13 +171,14 @@ fn gen_isa(isa_name: &str, all_recipes: &[EncRecipe], fmt: &mut Formatter) {
 }
 
 pub fn generate(
+    formats: &FormatRegistry,
     isa_name: &str,
     all_recipes: &[EncRecipe],
     binemit_filename: &str,
     out_dir: &str,
 ) -> Result<(), error::Error> {
     let mut fmt = Formatter::new();
-    gen_isa(isa_name, all_recipes, &mut fmt);
+    gen_isa(formats, isa_name, all_recipes, &mut fmt);
     fmt.update_file(binemit_filename, out_dir)?;
 
     Ok(())
