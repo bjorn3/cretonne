@@ -14,6 +14,8 @@ pub struct TargetIsa {
     pub settings: SettingGroup,
     pub regs: IsaRegs,
     pub cpu_modes: Vec<CpuMode>,
+
+    pub all_recipes: Vec<EncRecipe>,
 }
 
 impl TargetIsa {
@@ -30,6 +32,8 @@ impl TargetIsa {
             settings,
             regs,
             cpu_modes,
+
+            all_recipes: vec![],
         }
     }
 
@@ -52,6 +56,7 @@ impl TargetIsa {
         for cpu_mode in &self.cpu_modes {
             set.extend(cpu_mode.direct_xform_groups());
         }
+
         let mut vec = Vec::from_iter(set);
         vec.sort();
         vec
@@ -203,13 +208,4 @@ impl EncRecipe {
             ..self
         }
     }
-}
-
-pub struct Encoding {
-    pub cpu_mode: CpuMode,
-    //pub inst: InstSpec,
-    pub recipe: EncRecipe,
-    pub encbits: u64,
-    pub instp: Option<PredicateNode>,
-    pub isap: Option<PredicateNode>,
 }

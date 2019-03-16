@@ -63,7 +63,7 @@ pub fn generate(isas: &Vec<isa::Isa>, out_dir: &str) -> Result<(), error::Error>
             &format!("new_settings-{}", isa.name),
             &out_dir,
         )?;
-        //gen_binemit::generate(&shared_defs.format_registry, &isa.name, &isa.all_recipes, &format!("new_binemit-{}.rs", isa.name), &out_dir)?;
+        gen_binemit::generate(&shared_defs.format_registry, &isa.name, &isa.all_recipes, &format!("new_binemit-{}.rs", isa.name), &out_dir)?;
     }
 
     Ok(())

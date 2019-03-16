@@ -1,5 +1,7 @@
 use std::iter;
 
+use crate::cdsl::formats::FormatField;
+
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub struct BoolSettingIndex(usize);
 
@@ -170,6 +172,14 @@ pub enum PredicateNode {
     OwnedBool(BoolSettingIndex),
     SharedBool(&'static str, &'static str),
     And(Box<PredicateNode>, Box<PredicateNode>),
+    Or(Vec<PredicateNode>),
+    Not(Box<PredicateNode>),
+    FieldPredicate {
+        field: String,
+        function: String,
+        args: Vec<String>,
+    },
+    IsEqual(String, String),
 }
 
 impl Into<PredicateNode> for BoolSettingIndex {
@@ -187,7 +197,7 @@ impl<'a> Into<PredicateNode> for (BoolSettingIndex, &'a SettingGroup) {
 
 impl PredicateNode {
     fn render(&self, group: &SettingGroup) -> String {
-        match *self {
+        match self {
             PredicateNode::OwnedBool(bool_setting_index) => format!(
                 "{}.{}()",
                 group.name, group.settings[bool_setting_index.0].name
@@ -197,6 +207,24 @@ impl PredicateNode {
             }
             PredicateNode::And(ref lhs, ref rhs) => {
                 format!("{} && {}", lhs.render(group), rhs.render(group))
+            }
+            PredicateNode::Or(ref vals) => {
+                vals.iter().map(|val| val.render(group)).collect::<Vec<_>>().join(" || ")
+            }
+            PredicateNode::Not(ref val) => {
+                format!("!{}", val.render(group))
+            }
+            PredicateNode::FieldPredicate {
+                field,
+                function,
+                args,
+            } => {
+                format!("{}({})", function, args.iter().map(|arg| {
+                    field.clone() + arg
+                }).collect::<Vec<_>>().join(", "))
+            }
+            PredicateNode::IsEqual(field, value) => {
+                format!("is_equal({}.{}, {})", group.name, field, value)
             }
         }
     }

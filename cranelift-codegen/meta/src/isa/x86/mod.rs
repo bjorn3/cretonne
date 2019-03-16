@@ -1,6 +1,6 @@
 use crate::cdsl::cpu_modes::CpuMode;
 use crate::cdsl::isa::TargetIsa;
-use crate::cdsl::regs::{IsaRegs, IsaRegsBuilder, RegBankBuilder, RegClassBuilder};
+use crate::cdsl::regs::{IsaRegs, IsaRegsBuilder, RegBankBuilder, RegClassBuilder, RegClassIndex, Register};
 use crate::cdsl::settings::{PredicateNode, SettingGroup, SettingGroupBuilder};
 
 use crate::shared::types::Bool::B1;
@@ -8,6 +8,7 @@ use crate::shared::types::Float::{F32, F64};
 use crate::shared::types::Int::{I16, I32, I64, I8};
 use crate::shared::Definitions as SharedDefinitions;
 
+mod recipes;
 mod instructions;
 mod legalize;
 
@@ -77,7 +78,16 @@ fn define_settings(_shared: &SettingGroup) -> SettingGroup {
     settings.finish()
 }
 
-fn define_registers() -> IsaRegs {
+#[derive(Copy, Clone)]
+struct RegIndexes {
+    gpr: RegClassIndex,
+    gpr8: RegClassIndex,
+    fpr: RegClassIndex,
+    fpr8: RegClassIndex,
+    rflags: Register,
+}
+
+fn define_registers() -> (IsaRegs, RegIndexes) {
     let mut regs = IsaRegsBuilder::new();
 
     let builder = RegBankBuilder::new("IntRegs", "r")
@@ -104,7 +114,7 @@ fn define_registers() -> IsaRegs {
     let fpr = regs.add_class(builder);
 
     let builder = RegClassBuilder::new_toplevel("FLAG", flag_reg);
-    regs.add_class(builder);
+    let flag = regs.add_class(builder);
 
     let builder = RegClassBuilder::subclass_of("GPR8", gpr, 0, 8);
     let gpr8 = regs.add_class(builder);
@@ -113,14 +123,26 @@ fn define_registers() -> IsaRegs {
     regs.add_class(builder);
 
     let builder = RegClassBuilder::subclass_of("FPR8", fpr, 0, 8);
-    regs.add_class(builder);
+    let fpr8 = regs.add_class(builder);
 
-    regs.finish()
+    (
+        regs.finish(),
+        RegIndexes {
+            gpr,
+            gpr8,
+            fpr,
+            fpr8,
+            rflags: Register {
+                regclass: flag,
+                unit: 0,
+            },
+        },
+    )
 }
 
 pub fn define(shared_defs: &mut SharedDefinitions) -> TargetIsa {
     let settings = define_settings(&shared_defs.settings);
-    let regs = define_registers();
+    let (regs, _reg_indexes) = define_registers();
 
     let inst_group = instructions::define(&shared_defs.format_registry);
     legalize::define(shared_defs, &inst_group);
