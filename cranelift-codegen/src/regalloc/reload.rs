@@ -222,15 +222,28 @@ impl<'a> Context<'a> {
         {
             let dst_vals = self.cur.func.dfg.inst_results(inst);
             if dst_vals.len() == 1 {
+                let dst_val = dst_vals[0];
                 let can_transform = match (
                     self.cur.func.locations[arg],
-                    self.cur.func.locations[dst_vals[0]],
+                    self.cur.func.locations[dst_val],
                 ) {
-                    (ValueLoc::Stack(src_slot), ValueLoc::Stack(dst_slot)) => src_slot == dst_slot,
+                    (ValueLoc::Stack(src_slot), ValueLoc::Stack(dst_slot)) => {
+                        src_slot == dst_slot && {
+                            let src_ty = self.cur.func.dfg.value_type(arg);
+                            let dst_ty = self.cur.func.dfg.value_type(dst_val);
+                            debug_assert!(src_ty == dst_ty);
+                            // This limits the transformation to copies of the
+                            // types: I64 I32 I16 I8 F64 and F32, since that's
+                            // the set of `copy_nop` encodings available.
+                            src_ty.is_int() || src_ty.is_float()
+                        }
+                    }
                     _ => false,
                 };
                 if can_transform {
-                    // Convert the instruction into a `copy_nop`.
+                    // Convert the instruction into a `copy_nop`.  The
+                    // assertion will fail if there is no encoding for
+                    // `copy_nop` at the required type.
                     self.cur.func.dfg.replace(inst).copy_nop(arg);
                     let ok = self.cur.func.update_encoding(inst, self.cur.isa).is_ok();
                     debug_assert!(ok);

@@ -345,6 +345,8 @@ X86_32.enc(base.copy_special, *r.copysp(0x89))
 # into a no-op.
 X86_64.enc(base.copy_nop.i64, r.stacknull, 0)
 X86_64.enc(base.copy_nop.i32, r.stacknull, 0)
+X86_64.enc(base.copy_nop.i16, r.stacknull, 0)
+X86_64.enc(base.copy_nop.i8,  r.stacknull, 0)
 X86_64.enc(base.copy_nop.f64, r.stacknull, 0)
 X86_64.enc(base.copy_nop.f32, r.stacknull, 0)
 
