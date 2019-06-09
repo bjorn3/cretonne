@@ -334,7 +334,7 @@ where
     B: Backend,
 {
     /// Create a new `Module`.
-    pub fn new(backend_builder: B::Builder) -> Self {
+    pub fn new(backend: B) -> Self {
         Self {
             names: HashMap::new(),
             contents: ModuleContents {
@@ -343,7 +343,7 @@ where
             },
             functions_to_finalize: Vec::new(),
             data_objects_to_finalize: Vec::new(),
-            backend: B::new(backend_builder),
+            backend,
         }
     }
 

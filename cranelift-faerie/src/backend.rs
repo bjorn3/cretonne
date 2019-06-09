@@ -6,7 +6,7 @@ use cranelift_codegen::binemit::{Addend, CodeOffset, NullTrapSink, Reloc, RelocS
 use cranelift_codegen::isa::TargetIsa;
 use cranelift_codegen::{self, binemit, ir};
 use cranelift_module::{
-    Backend, DataContext, DataDescription, Init, Linkage, ModuleError, ModuleNamespace,
+    Backend, DataContext, DataDescription, Init, Linkage, Module, ModuleError, ModuleNamespace,
     ModuleResult,
 };
 use faerie;
@@ -25,18 +25,18 @@ pub enum FaerieTrapCollection {
     Enabled,
 }
 
-/// A builder for `FaerieBackend`.
-pub struct FaerieBuilder {
+/// A `FaerieBackend` implements `Backend` and emits ".o" files using the `faerie` library.
+///
+/// See the `FaerieBuilder` for a convenient way to construct `FaerieBackend` instances.
+pub struct FaerieBackend {
     isa: Box<TargetIsa>,
-    name: String,
-    collect_traps: FaerieTrapCollection,
+    artifact: faerie::Artifact,
+    trap_manifest: Option<FaerieTrapManifest>,
     libcall_names: Box<Fn(ir::LibCall) -> String>,
 }
 
-impl FaerieBuilder {
-    /// Create a new `FaerieBuilder` using the given Cranelift target, that
-    /// can be passed to
-    /// [`Module::new`](cranelift_module/struct.Module.html#method.new].
+impl FaerieBackend {
+    /// Create a new `Module<FaerieBackend>` using the given Cranelift target.
     ///
     /// Faerie output requires that TargetIsa have PIC (Position Independent Code) enabled.
     ///
@@ -52,29 +52,23 @@ impl FaerieBuilder {
         name: String,
         collect_traps: FaerieTrapCollection,
         libcall_names: Box<Fn(ir::LibCall) -> String>,
-    ) -> ModuleResult<Self> {
+    ) -> ModuleResult<Module<Self>> {
         if !isa.flags().is_pic() {
             return Err(ModuleError::Backend(
                 "faerie requires TargetIsa be PIC".to_owned(),
             ));
         }
-        Ok(Self {
-            isa,
-            name,
-            collect_traps,
-            libcall_names,
-        })
-    }
-}
 
-/// A `FaerieBackend` implements `Backend` and emits ".o" files using the `faerie` library.
-///
-/// See the `FaerieBuilder` for a convenient way to construct `FaerieBackend` instances.
-pub struct FaerieBackend {
-    isa: Box<TargetIsa>,
-    artifact: faerie::Artifact,
-    trap_manifest: Option<FaerieTrapManifest>,
-    libcall_names: Box<Fn(ir::LibCall) -> String>,
+        Ok(Module::new(Self {
+            artifact: faerie::Artifact::new(isa.triple().clone(), name),
+            isa,
+            trap_manifest: match collect_traps {
+                FaerieTrapCollection::Enabled => Some(FaerieTrapManifest::new()),
+                FaerieTrapCollection::Disabled => None,
+            },
+            libcall_names,
+        }))
+    }
 }
 
 pub struct FaerieCompiledFunction {
@@ -90,8 +84,6 @@ impl FaerieCompiledFunction {
 pub struct FaerieCompiledData {}
 
 impl Backend for FaerieBackend {
-    type Builder = FaerieBuilder;
-
     type CompiledFunction = FaerieCompiledFunction;
     type CompiledData = FaerieCompiledData;
 
@@ -103,19 +95,6 @@ impl Backend for FaerieBackend {
     /// The returned value here provides functions for emitting object files
     /// to memory and files.
     type Product = FaerieProduct;
-
-    /// Create a new `FaerieBackend` using the given Cranelift target.
-    fn new(builder: FaerieBuilder) -> Self {
-        Self {
-            artifact: faerie::Artifact::new(builder.isa.triple().clone(), builder.name),
-            isa: builder.isa,
-            trap_manifest: match builder.collect_traps {
-                FaerieTrapCollection::Enabled => Some(FaerieTrapManifest::new()),
-                FaerieTrapCollection::Disabled => None,
-            },
-            libcall_names: builder.libcall_names,
-        }
-    }
 
     fn isa(&self) -> &TargetIsa {
         &*self.isa

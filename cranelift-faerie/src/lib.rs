@@ -32,7 +32,7 @@ mod backend;
 mod container;
 pub mod traps;
 
-pub use crate::backend::{FaerieBackend, FaerieBuilder, FaerieProduct, FaerieTrapCollection};
+pub use crate::backend::{FaerieBackend, FaerieProduct, FaerieTrapCollection};
 pub use crate::container::Format;
 
 /// Version number of this crate.

@@ -27,9 +27,6 @@ pub trait Backend
 where
     Self: marker::Sized,
 {
-    /// A builder for constructing `Backend` instances.
-    type Builder;
-
     /// The results of compiling a function.
     type CompiledFunction;
 
@@ -48,9 +45,6 @@ where
     /// [`finish`](struct.Module.html#method.finish) function,
     /// if the `Backend` has a purpose for this.
     type Product;
-
-    /// Create a new `Backend` instance.
-    fn new(_: Self::Builder) -> Self;
 
     /// Return the `TargetIsa` to compile for.
     fn isa(&self) -> &TargetIsa;

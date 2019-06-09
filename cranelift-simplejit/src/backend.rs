@@ -5,7 +5,7 @@ use cranelift_codegen::binemit::{Addend, CodeOffset, NullTrapSink, Reloc, RelocS
 use cranelift_codegen::isa::TargetIsa;
 use cranelift_codegen::{self, ir, settings};
 use cranelift_module::{
-    Backend, DataContext, DataDescription, Init, Linkage, ModuleNamespace, ModuleResult,
+    Backend, DataContext, DataDescription, Init, Linkage, Module, ModuleNamespace, ModuleResult,
 };
 use cranelift_native;
 use libc;
@@ -101,6 +101,18 @@ impl SimpleJITBuilder {
         }
         self
     }
+
+    /// Create a new `SimpleJITBackend`.
+    pub fn build(self) -> Module<SimpleJITBackend> {
+        Module::new(SimpleJITBackend {
+            isa: self.isa,
+            symbols: self.symbols,
+            libcall_names: self.libcall_names,
+            code_memory: Memory::new(),
+            readonly_memory: Memory::new(),
+            writable_memory: Memory::new(),
+        })
+    }
 }
 
 /// A `SimpleJITBackend` implements `Backend` and emits code and data into memory where it can be
@@ -175,8 +187,6 @@ impl SimpleJITBackend {
 }
 
 impl<'simple_jit_backend> Backend for SimpleJITBackend {
-    type Builder = SimpleJITBuilder;
-
     /// SimpleJIT compiled function and data objects may have outstanding
     /// relocations that need to be performed before the memory can be used.
     /// These relocations are performed within `finalize_function` and
@@ -192,18 +202,6 @@ impl<'simple_jit_backend> Backend for SimpleJITBackend {
     /// SimpleJIT emits code and data into memory as it processes them, so it
     /// doesn't need to provide anything after the `Module` is complete.
     type Product = ();
-
-    /// Create a new `SimpleJITBackend`.
-    fn new(builder: SimpleJITBuilder) -> Self {
-        Self {
-            isa: builder.isa,
-            symbols: builder.symbols,
-            libcall_names: builder.libcall_names,
-            code_memory: Memory::new(),
-            readonly_memory: Memory::new(),
-            writable_memory: Memory::new(),
-        }
-    }
 
     fn isa(&self) -> &TargetIsa {
         &*self.isa
