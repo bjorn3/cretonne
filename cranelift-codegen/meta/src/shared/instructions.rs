@@ -3024,7 +3024,7 @@ pub fn define(
         "WideInt",
         "An integer type with lanes from `i16` upwards",
         TypeSetBuilder::new()
-            .ints(16..64)
+            .ints(16..128)
             .simd_lanes(Interval::All)
             .build(),
     );
@@ -3052,9 +3052,9 @@ pub fn define(
 
     let NarrowInt = &TypeVar::new(
         "NarrowInt",
-        "An integer type with lanes type to `i32`",
+        "An integer type with lanes type to `i64`",
         TypeSetBuilder::new()
-            .ints(8..32)
+            .ints(8..64)
             .simd_lanes(Interval::All)
             .build(),
     );
