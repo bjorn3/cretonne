@@ -84,12 +84,14 @@ impl InstructionGroup {
     }
 }
 
+#[derive(Debug)]
 pub struct PolymorphicInfo {
     pub use_typevar_operand: bool,
     pub ctrl_typevar: TypeVar,
     pub other_typevars: Vec<TypeVar>,
 }
 
+#[derive(Debug)]
 pub struct InstructionContent {
     /// Instruction mnemonic, also becomes opcode name.
     pub name: String,
@@ -141,7 +143,7 @@ pub struct InstructionContent {
     pub writes_cpu_flags: bool,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Instruction {
     content: Rc<InstructionContent>,
 }
