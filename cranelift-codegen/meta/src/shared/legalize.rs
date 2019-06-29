@@ -220,7 +220,7 @@ pub fn define(insts: &InstructionGroup, immediates: &OperandKinds) -> TransformG
         ],
     );
 
-    for &bin_op in &[band, bor, bxor] {
+    for &bin_op in &[band, bor, bxor, band_not, bor_not, bxor_not] {
         narrow.legalize(
             def!(a = bin_op(x, y)),
             vec![
@@ -232,6 +232,16 @@ pub fn define(insts: &InstructionGroup, immediates: &OperandKinds) -> TransformG
             ],
         );
     }
+
+    narrow.legalize(
+        def!(a = bnot(x)),
+        vec![
+            def!((xl, xh) = isplit(x)),
+            def!(al = bnot(xl)),
+            def!(ah = bnot(xh)),
+            def!(a = iconcat(al, ah)),
+        ],
+    );
 
     narrow.legalize(
         def!(a = select(c, x, y)),
