@@ -5,7 +5,7 @@ use crate::cdsl::xform::{TransformGroupBuilder, TransformGroups};
 use crate::shared::OperandKinds;
 
 use crate::shared::types::Float::{F32, F64};
-use crate::shared::types::Int::{I16, I128, I32, I64, I8};
+use crate::shared::types::Int::{I128, I16, I32, I64, I8};
 
 pub fn define(insts: &InstructionGroup, immediates: &OperandKinds) -> TransformGroups {
     let mut narrow = TransformGroupBuilder::new(
@@ -258,8 +258,20 @@ pub fn define(insts: &InstructionGroup, immediates: &OperandKinds) -> TransformG
         def!(brz.I128(x, ebb, vararg)),
         vec![
             def!((xl, xh) = isplit(x)),
-            def!(a = icmp_imm(Literal::enumerator_for(intcc, "eq"), xl, Literal::constant(imm64, 0))),
-            def!(b = icmp_imm(Literal::enumerator_for(intcc, "eq"), xh, Literal::constant(imm64, 0))),
+            def!(
+                a = icmp_imm(
+                    Literal::enumerator_for(intcc, "eq"),
+                    xl,
+                    Literal::constant(imm64, 0)
+                )
+            ),
+            def!(
+                b = icmp_imm(
+                    Literal::enumerator_for(intcc, "eq"),
+                    xh,
+                    Literal::constant(imm64, 0)
+                )
+            ),
             def!(c = band(a, b)),
             def!(brz(c, ebb, vararg)),
         ],
