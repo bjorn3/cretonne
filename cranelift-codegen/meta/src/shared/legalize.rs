@@ -5,7 +5,7 @@ use crate::cdsl::xform::{TransformGroupBuilder, TransformGroups};
 use crate::shared::OperandKinds;
 
 use crate::shared::types::Float::{F32, F64};
-use crate::shared::types::Int::{I16, I32, I64, I8};
+use crate::shared::types::Int::{I16, I128, I32, I64, I8};
 
 pub fn define(insts: &InstructionGroup, immediates: &OperandKinds) -> TransformGroups {
     let mut narrow = TransformGroupBuilder::new(
@@ -50,6 +50,8 @@ pub fn define(insts: &InstructionGroup, immediates: &OperandKinds) -> TransformG
     let bor = insts.by_name("bor");
     let bor_imm = insts.by_name("bor_imm");
     let bor_not = insts.by_name("bor_not");
+    let brnz = insts.by_name("brnz");
+    let brz = insts.by_name("brz");
     let br_icmp = insts.by_name("br_icmp");
     let br_table = insts.by_name("br_table");
     let bxor = insts.by_name("bxor");
@@ -190,9 +192,11 @@ pub fn define(insts: &InstructionGroup, immediates: &OperandKinds) -> TransformG
     let al = var("al");
     let ah = var("ah");
     let cc = var("cc");
+    let ebb = var("ebb");
     let ptr = var("ptr");
     let flags = var("flags");
     let offset = var("off");
+    let vararg = var("vararg");
 
     narrow.legalize(
         def!(a = iadd(x, y)),
@@ -237,6 +241,26 @@ pub fn define(insts: &InstructionGroup, immediates: &OperandKinds) -> TransformG
             def!(al = select(c, xl, yl)),
             def!(ah = select(c, xh, yh)),
             def!(a = iconcat(al, ah)),
+        ],
+    );
+
+    narrow.legalize(
+        def!(brz.I128(x, ebb, vararg)),
+        vec![
+            def!((xl, xh) = isplit(x)),
+            def!(a = icmp_imm(Literal::enumerator_for(intcc, "eq"), xl, Literal::constant(imm64, 0))),
+            def!(b = icmp_imm(Literal::enumerator_for(intcc, "eq"), xh, Literal::constant(imm64, 0))),
+            def!(c = band(a, b)),
+            def!(brz(c, ebb, vararg)),
+        ],
+    );
+
+    narrow.legalize(
+        def!(brnz.I128(x, ebb, vararg)),
+        vec![
+            def!((xl, xh) = isplit(x)),
+            def!(brnz(xl, ebb, vararg)),
+            def!(brnz(xh, ebb, vararg)),
         ],
     );
 
