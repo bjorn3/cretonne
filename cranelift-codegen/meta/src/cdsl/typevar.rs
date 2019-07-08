@@ -10,6 +10,7 @@ use crate::cdsl::types::{BVType, LaneType, SpecialType, ValueType};
 
 const MAX_LANES: u16 = 256;
 const MAX_BITS: u16 = 128;
+const MAX_FLOAT_BITS: u16 = 64;
 const MAX_BITVEC: u16 = MAX_BITS * MAX_LANES;
 
 /// Type variables can be used in place of concrete types when defining
@@ -173,7 +174,7 @@ impl TypeVar {
                     "can't double all integer types"
                 );
                 assert!(
-                    ts.floats.len() == 0 || *ts.floats.iter().max().unwrap() < MAX_BITS,
+                    ts.floats.len() == 0 || *ts.floats.iter().max().unwrap() < MAX_FLOAT_BITS,
                     "can't double all float types"
                 );
                 assert!(
@@ -491,7 +492,7 @@ impl TypeSet {
         copy.floats = NumSet::from_iter(
             self.floats
                 .iter()
-                .filter(|&&x| x < MAX_BITS)
+                .filter(|&&x| x < MAX_FLOAT_BITS)
                 .map(|&x| x * 2),
         );
         copy.bools = NumSet::from_iter(
@@ -605,7 +606,7 @@ impl TypeSet {
                 let mut copy = self.clone();
                 copy.bitvecs = NumSet::new();
                 if self.bools.contains(&1) {
-                    copy.ints = NumSet::from_iter(vec![8, 16, 32, 64]);
+                    copy.ints = NumSet::from_iter(vec![8, 16, 32, 64, 128]);
                     copy.floats = NumSet::from_iter(vec![32, 64]);
                 } else {
                     copy.ints = &self.bools - &NumSet::from_iter(vec![1]);
@@ -914,7 +915,7 @@ fn test_typevar_builder() {
     let type_set = TypeSetBuilder::new().ints(Interval::All).build();
     assert_eq!(type_set.lanes, num_set![1]);
     assert!(type_set.floats.is_empty());
-    assert_eq!(type_set.ints, num_set![8, 16, 32, 64]);
+    assert_eq!(type_set.ints, num_set![8, 16, 32, 64, 128]);
     assert!(type_set.bools.is_empty());
     assert!(type_set.bitvecs.is_empty());
     assert!(type_set.specials.is_empty());
@@ -923,7 +924,7 @@ fn test_typevar_builder() {
     assert_eq!(type_set.lanes, num_set![1]);
     assert!(type_set.floats.is_empty());
     assert!(type_set.ints.is_empty());
-    assert_eq!(type_set.bools, num_set![1, 8, 16, 32, 64]);
+    assert_eq!(type_set.bools, num_set![1, 8, 16, 32, 64, 128]);
     assert!(type_set.bitvecs.is_empty());
     assert!(type_set.specials.is_empty());
 
@@ -1065,7 +1066,7 @@ fn test_forward_images() {
     );
     assert_eq!(
         TypeSetBuilder::new().ints(32..64).build().double_width(),
-        TypeSetBuilder::new().ints(64..64).build()
+        TypeSetBuilder::new().ints(64..128).build()
     );
     assert_eq!(
         TypeSetBuilder::new().floats(32..32).build().double_width(),
@@ -1081,7 +1082,7 @@ fn test_forward_images() {
     );
     assert_eq!(
         TypeSetBuilder::new().bools(32..64).build().double_width(),
-        TypeSetBuilder::new().bools(64..64).build()
+        TypeSetBuilder::new().bools(64..128).build()
     );
 }
 
@@ -1109,7 +1110,7 @@ fn test_backward_images() {
     assert_eq!(
         TypeSetBuilder::new()
             .simd_lanes(1..4)
-            .bools(1..64)
+            .bools(1..128)
             .build()
             .preimage(DerivedFunc::AsBool),
         TypeSetBuilder::new()
@@ -1169,9 +1170,9 @@ fn test_backward_images() {
     // Half width.
     assert_eq!(
         TypeSetBuilder::new()
-            .ints(64..64)
+            .ints(128..128)
             .floats(64..64)
-            .bools(64..64)
+            .bools(128..128)
             .build()
             .preimage(DerivedFunc::HalfWidth)
             .size(),
@@ -1185,7 +1186,7 @@ fn test_backward_images() {
             .preimage(DerivedFunc::HalfWidth),
         TypeSetBuilder::new()
             .simd_lanes(64..256)
-            .bools(16..64)
+            .bools(16..128)
             .build(),
     );
 

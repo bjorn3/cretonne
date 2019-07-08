@@ -14,7 +14,7 @@ use target_lexicon::{PointerWidth, Triple};
 ///
 /// Basic floating point types: `F32` and `F64`. IEEE single and double precision.
 ///
-/// Boolean types: `B1`, `B8`, `B16`, `B32`, and `B64`. These all encode 'true' or 'false'. The
+/// Boolean types: `B1`, `B8`, `B16`, `B32`, `B64`, and `B128`. These all encode 'true' or 'false'. The
 /// larger types use redundant bits.
 ///
 /// SIMD vector types have power-of-two lanes, up to 256. Lanes can be any int/float/bool type.
@@ -63,7 +63,7 @@ impl Type {
             B16 | I16 => 4,
             B32 | I32 | F32 => 5,
             B64 | I64 | F64 => 6,
-            I128 => 7,
+            B128 | I128 => 7,
             _ => 0,
         }
     }
@@ -76,7 +76,7 @@ impl Type {
             B16 | I16 => 16,
             B32 | I32 | F32 => 32,
             B64 | I64 | F64 => 64,
-            I128 => 128,
+            B128 | I128 => 128,
             _ => 0,
         }
     }
@@ -111,6 +111,7 @@ impl Type {
             B16 | I16 => B16,
             B32 | I32 | F32 => B32,
             B64 | I64 | F64 => B64,
+            B128 | I128 => B128,
             _ => B1,
         })
     }
@@ -139,6 +140,7 @@ impl Type {
             B16 => B8,
             B32 => B16,
             B64 => B32,
+            B128 => B64,
             _ => return None,
         }))
     }
@@ -155,6 +157,7 @@ impl Type {
             B8 => B16,
             B16 => B32,
             B32 => B64,
+            B64 => B128,
             _ => return None,
         }))
     }
@@ -186,7 +189,7 @@ impl Type {
     /// Is this a scalar boolean type?
     pub fn is_bool(self) -> bool {
         match self {
-            B1 | B8 | B16 | B32 | B64 => true,
+            B1 | B8 | B16 | B32 | B64 | B128 => true,
             _ => false,
         }
     }
@@ -362,6 +365,7 @@ mod tests {
         assert_eq!(B16, B16.lane_type());
         assert_eq!(B32, B32.lane_type());
         assert_eq!(B64, B64.lane_type());
+        assert_eq!(B128, B128.lane_type());
         assert_eq!(I8, I8.lane_type());
         assert_eq!(I16, I16.lane_type());
         assert_eq!(I32, I32.lane_type());
@@ -378,6 +382,7 @@ mod tests {
         assert_eq!(B16.lane_bits(), 16);
         assert_eq!(B32.lane_bits(), 32);
         assert_eq!(B64.lane_bits(), 64);
+        assert_eq!(B128.lane_bits(), 128);
         assert_eq!(I8.lane_bits(), 8);
         assert_eq!(I16.lane_bits(), 16);
         assert_eq!(I32.lane_bits(), 32);
@@ -397,6 +402,7 @@ mod tests {
         assert_eq!(B16.half_width(), Some(B8));
         assert_eq!(B32.half_width(), Some(B16));
         assert_eq!(B64.half_width(), Some(B32));
+        assert_eq!(B128.half_width(), Some(B64));
         assert_eq!(I8.half_width(), None);
         assert_eq!(I16.half_width(), Some(I8));
         assert_eq!(I32.half_width(), Some(I16));
@@ -413,7 +419,8 @@ mod tests {
         assert_eq!(B8.double_width(), Some(B16));
         assert_eq!(B16.double_width(), Some(B32));
         assert_eq!(B32.double_width(), Some(B64));
-        assert_eq!(B64.double_width(), None);
+        assert_eq!(B64.double_width(), Some(B128));
+        assert_eq!(B128.double_width(), None);
         assert_eq!(I8.double_width(), Some(I16));
         assert_eq!(I16.double_width(), Some(I32));
         assert_eq!(I32.double_width(), Some(I64));
@@ -450,6 +457,7 @@ mod tests {
         assert_eq!(B16.to_string(), "b16");
         assert_eq!(B32.to_string(), "b32");
         assert_eq!(B64.to_string(), "b64");
+        assert_eq!(B128.to_string(), "b128");
         assert_eq!(I8.to_string(), "i8");
         assert_eq!(I16.to_string(), "i16");
         assert_eq!(I32.to_string(), "i32");
