@@ -9,7 +9,7 @@ use crate::cdsl::instructions::{
 };
 use crate::cdsl::recipes::{EncodingRecipe, EncodingRecipeNumber, Recipes};
 use crate::cdsl::settings::{SettingGroup, SettingPredicateNumber};
-use crate::cdsl::types::ValueType;
+use crate::cdsl::types::{LaneType, ValueType};
 use crate::shared::types::Bool::{B1, B16, B32, B64, B8};
 use crate::shared::types::Float::{F32, F64};
 use crate::shared::types::Int::{I16, I32, I64, I8};
@@ -1596,6 +1596,8 @@ pub fn define(
     // legalize.rs for how this is done; once there, x86_pshuf* (below) is used for broadcasting the
     // value across the register
 
+    let allowed_simd_type = |t: &LaneType| t.lane_bits() >= 8 && t.lane_bits() < 128;
+
     // PSHUFB, 8-bit shuffle using two XMM registers
     for ty in ValueType::all_lane_types().filter(|t| t.lane_bits() == 8) {
         let number_of_lanes = 128 / ty.lane_bits();
@@ -1617,7 +1619,7 @@ pub fn define(
     // SIMD scalar_to_vector; this uses MOV to copy the scalar value to an XMM register; according
     // to the Intel manual: "When the destination operand is an XMM register, the source operand is
     // written to the low doubleword of the register and the regiser is zero-extended to 128 bits."
-    for ty in ValueType::all_lane_types().filter(|t| t.lane_bits() >= 8) {
+    for ty in ValueType::all_lane_types().filter(allowed_simd_type) {
         let number_of_lanes = 128 / ty.lane_bits();
         let instruction = scalar_to_vector.bind_vector(ty, number_of_lanes).bind(ty);
         let template = rec_frurm.opcodes(vec![0x66, 0x0f, 0x6e]); // MOVD/MOVQ
@@ -1657,8 +1659,9 @@ pub fn define(
     }
 
     // SIMD bitcast all 128-bit vectors to each other (for legalizing splat.x16x8)
-    for from_type in ValueType::all_lane_types().filter(|t| t.lane_bits() >= 8) {
-        for to_type in ValueType::all_lane_types().filter(|t| t.lane_bits() >= 8 && *t != from_type)
+    for from_type in ValueType::all_lane_types().filter(allowed_simd_type) {
+        for to_type in
+            ValueType::all_lane_types().filter(|t| allowed_simd_type(t) && *t != from_type)
         {
             let instruction = raw_bitcast
                 .bind_vector(to_type, 128 / to_type.lane_bits())

@@ -1086,6 +1086,11 @@ fn bind_vector(
     num_lanes: u64,
     mut value_types: Vec<ValueTypeOrAny>,
 ) -> BoundInstruction {
+    assert!(
+        num_lanes >= 2,
+        "Minimum lane number for bind_vector is 2, found {}.",
+        num_lanes,
+    );
     let vector_type = ValueType::Vector(VectorType::new(lane_type, num_lanes));
     value_types.push(ValueTypeOrAny::ValueType(vector_type));
     verify_polymorphic_binding(&inst, &value_types);
