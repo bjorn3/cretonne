@@ -11,6 +11,7 @@ edition = "2018"
 
 [dependencies]
 cranelift-module = { path = "../cranelift-module", version = "0.48.0" }
+byteorder = "1.2"
 faerie = "0.11.0"
 goblin = "0.1.0"
 failure = "0.1.2"
