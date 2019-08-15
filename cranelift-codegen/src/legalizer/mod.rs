@@ -580,9 +580,12 @@ fn narrow_load(
         _ => panic!("Expected load: {}", pos.func.dfg.display_inst(inst, None)),
     };
 
-    let al = pos.ins().load(ir::types::I64, flags, ptr, offset);
+    let res_ty = pos.func.dfg.ctrl_typevar(inst);
+    let small_ty = res_ty.half_width().expect("Can't narrow load");
+
+    let al = pos.ins().load(small_ty, flags, ptr, offset);
     let ah = pos.ins().load(
-        ir::types::I64,
+        small_ty,
         flags,
         ptr,
         offset.try_add_i64(8).expect("load offset overflow"),
@@ -610,7 +613,7 @@ fn narrow_store(
         _ => panic!("Expected store: {}", pos.func.dfg.display_inst(inst, None)),
     };
 
-    let (al, ah) = pos.func.dfg.replace(inst).isplit(val);
+    let (al, ah) = pos.ins().isplit(val);
     pos.ins().store(flags, al, ptr, offset);
     pos.ins().store(
         flags,
@@ -618,4 +621,5 @@ fn narrow_store(
         ptr,
         offset.try_add_i64(8).expect("store offset overflow"),
     );
+    pos.remove_inst();
 }
