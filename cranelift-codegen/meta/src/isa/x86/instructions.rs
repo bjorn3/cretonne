@@ -546,6 +546,7 @@ pub(crate) fn define(
 
     let GV = &Operand::new("GV", &entities.global_value);
     let addr = &Operand::new("addr", iWord);
+    let x = &Operand::new("x", iWord);
 
     ig.push(
         Inst::new(
@@ -561,9 +562,9 @@ pub(crate) fn define(
         Inst::new(
             "x86_elf_dtpoff32",
             "FIXME",
-            &formats.unary_global_value,
+            &formats.tls_offset,
         )
-        .operands_in(vec![GV])
+        .operands_in(vec![GV, x])
         .operands_out(vec![addr]),
     );
 

@@ -783,7 +783,8 @@ impl<'a> Verifier<'a> {
             | CondTrap { .. }
             | IntCondTrap { .. }
             | FloatCondTrap { .. }
-            | NullAry { .. } => {}
+            | NullAry { .. }
+            | TlsOffset { .. } => {}
         }
 
         Ok(())
