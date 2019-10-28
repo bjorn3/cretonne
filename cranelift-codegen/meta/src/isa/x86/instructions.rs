@@ -544,29 +544,27 @@ pub(crate) fn define(
         .operands_out(vec![a]),
     );
 
+    let i64_t = &TypeVar::new(
+        "i64_t",
+        "A scalar 64bit integer",
+        TypeSetBuilder::new().ints(64..64).build(),
+    );
+
     let GV = &Operand::new("GV", &entities.global_value);
-    let addr = &Operand::new("addr", iWord);
-    let x = &Operand::new("x", iWord);
+    let addr = &Operand::new("addr", i64_t);
+    let clobber = &Operand::new("clobber", i64_t); // FIXME remove need for this
 
     ig.push(
         Inst::new(
-            "x86_elf_tlsld",
-            "FIXME",
+            "x86_elf_tls_gd_get_addr",
+            r#"
+        Elf tls gd get addr -- This implements the GD TLS model for ELF. The clobber output should
+        not be used.
+            "#,
             &formats.unary_global_value,
         )
         .operands_in(vec![GV])
-        .operands_out(vec![addr]),
+        .operands_out(vec![addr, clobber]),
     );
-
-    ig.push(
-        Inst::new(
-            "x86_elf_dtpoff32",
-            "FIXME",
-            &formats.tls_offset,
-        )
-        .operands_in(vec![GV, x])
-        .operands_out(vec![addr]),
-    );
-
     ig.build()
 }
