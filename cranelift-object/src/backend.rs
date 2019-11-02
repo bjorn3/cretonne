@@ -14,7 +14,7 @@ use cranelift_module::{
 use object::write::{Object, Relocation, SectionId, StandardSection, Symbol, SymbolId};
 use object::{RelocationEncoding, RelocationKind, SymbolKind, SymbolScope};
 use std::collections::HashMap;
-use target_lexicon::PointerWidth;
+use target_lexicon::{BinaryFormat, PointerWidth};
 
 #[derive(Debug)]
 /// Setting to enable collection of traps. Setting this to `Enabled` in
@@ -179,7 +179,7 @@ impl Backend for ObjectBackend {
         code_size: u32,
     ) -> ModuleResult<ObjectCompiledFunction> {
         let mut code: Vec<u8> = vec![0; code_size as usize];
-        let mut reloc_sink = ObjectRelocSink::default();
+        let mut reloc_sink = ObjectRelocSink::new(self.object.format());
         let mut trap_sink = ObjectTrapSink::default();
         let mut stackmap_sink = NullStackmapSink {};
 
@@ -520,9 +520,18 @@ struct RelocRecord {
     addend: Addend,
 }
 
-#[derive(Default)]
 struct ObjectRelocSink {
+    format: BinaryFormat,
     relocs: Vec<RelocRecord>,
+}
+
+impl ObjectRelocSink {
+    fn new(format: BinaryFormat) -> Self {
+        Self {
+            format,
+            relocs: vec![],
+        }
+    }
 }
 
 impl RelocSink for ObjectRelocSink {
@@ -551,7 +560,14 @@ impl RelocSink for ObjectRelocSink {
             ),
             Reloc::X86GOTPCRel4 => (RelocationKind::GotRelative, RelocationEncoding::Generic, 32),
 
-            Reloc::ElfX86_64TlsGd => (RelocationKind::Other(goblin::elf64::reloc::R_X86_64_TLSGD), RelocationEncoding::Generic, 32),
+            Reloc::ElfX86_64TlsGd => {
+                assert_eq!(
+                    self.format,
+                    BinaryFormat::Elf,
+                    "ElfX86_64TlsGd is not supported for this file format"
+                );
+                (RelocationKind::Other(goblin::elf64::reloc::R_X86_64_TLSGD), RelocationEncoding::Generic, 32)
+            }
             // FIXME
             _ => unimplemented!(),
         };
