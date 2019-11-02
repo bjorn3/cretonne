@@ -59,6 +59,9 @@ pub enum Reloc {
 
     /// Elf x86_64 32 bit signed PC relative offset to two GOT entries for GD symbol.
     ElfX86_64TlsGd,
+
+    /// Mach-O x86_64 32 bit signed PC relative offset to a `__thread_vars` entry.
+    MachOX86_64Tlv,
 }
 
 impl fmt::Display for Reloc {
@@ -76,6 +79,7 @@ impl fmt::Display for Reloc {
             Self::Arm32Call | Self::Arm64Call | Self::RiscvCall => write!(f, "Call"),
 
             Self::ElfX86_64TlsGd => write!(f, "ElfX86_64TlsGd"),
+            Self::MachOX86_64Tlv => write!(f, "MachOX86_64Tlv"),
         }
     }
 }

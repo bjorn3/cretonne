@@ -568,6 +568,14 @@ impl RelocSink for ObjectRelocSink {
                 );
                 (RelocationKind::Other(goblin::elf64::reloc::R_X86_64_TLSGD), RelocationEncoding::Generic, 32)
             }
+            Reloc::MachOX86_64Tlv => {
+                assert_eq!(
+                    self.format,
+                    BinaryFormat::Macho,
+                    "MachOX86_64Tlv is not supported for this file format"
+                );
+                (RelocationKind::Other(u32::from(goblin::mach::relocation::X86_64_RELOC_TLV)), RelocationEncoding::Generic, 32)
+            }
             // FIXME
             _ => unimplemented!(),
         };

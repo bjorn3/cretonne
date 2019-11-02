@@ -3113,7 +3113,7 @@ pub(crate) fn define<'shared>(
     );*/
 
     recipes.add_recipe(
-        EncodingRecipeBuilder::new("elf_tls_gd_get_addr", &formats.unary_global_value, 16)
+        EncodingRecipeBuilder::new("elf_tls_get_addr", &formats.unary_global_value, 16)
             // FIXME Correct encoding for non rax registers
             .operands_out(vec![reg_rax, reg_rdi])
             .emit(
@@ -3143,6 +3143,31 @@ pub(crate) fn define<'shared>(
                                         &ExternalName::LibCall(LibCall::ElfTlsGetAddr),
                                         -4);
                     sink.put4(0);
+                "#,
+            ),
+    );
+
+    recipes.add_recipe(
+        EncodingRecipeBuilder::new("macho_tls_get_addr", &formats.unary_global_value, 9)
+            // FIXME Correct encoding for non rax registers
+            .operands_out(vec![reg_rax, reg_rdi])
+            .emit(
+                r#"
+                    // output %rax
+                    // clobbers %rdi
+
+                    // movq gv@tlv(%rip), %rdi
+                    sink.put1(0x48); // rex
+                    sink.put1(0x8b); // mov
+                    modrm_riprel(0b111/*out_reg0*/, sink); // 0x3d
+                    sink.reloc_external(Reloc::MachOX86_64Tlv,
+                                        &func.global_values[global_value].symbol_name(),
+                                        -4);
+                    sink.put4(0);
+
+                    // callq *(%rdi)
+                    sink.put1(0xff);
+                    sink.put1(0x17);
                 "#,
             ),
     );

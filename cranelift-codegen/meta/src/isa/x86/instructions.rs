@@ -556,9 +556,9 @@ pub(crate) fn define(
 
     ig.push(
         Inst::new(
-            "x86_elf_tls_gd_get_addr",
+            "x86_elf_tls_get_addr",
             r#"
-        Elf tls gd get addr -- This implements the GD TLS model for ELF. The clobber output should
+        Elf tls get addr -- This implements the GD TLS model for ELF. The clobber output should
         not be used.
             "#,
             &formats.unary_global_value,
@@ -566,5 +566,18 @@ pub(crate) fn define(
         .operands_in(vec![GV])
         .operands_out(vec![addr, clobber]),
     );
+    ig.push(
+        Inst::new(
+            "x86_macho_tls_get_addr",
+            r#"
+        Mach-O tls get addr -- This implements TLS access for Mach-O. The clobber output should
+        not be used.
+            "#,
+            &formats.unary_global_value,
+        )
+        .operands_in(vec![GV])
+        .operands_out(vec![addr, clobber]),
+    );
+
     ig.build()
 }

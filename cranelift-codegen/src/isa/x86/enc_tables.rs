@@ -1127,6 +1127,8 @@ fn expand_tls_value(
     _cfg: &mut ControlFlowGraph,
     isa: &dyn TargetIsa,
 ) {
+    use crate::settings::TlsModel;
+
     assert!(
         isa.triple().architecture == target_lexicon::Architecture::X86_64,
         "Not yet implemented for {:?}",
@@ -1150,7 +1152,12 @@ fn expand_tls_value(
             _ => unreachable!(),
         };
 
-        let (tls_addr, _clobber) = func.dfg.replace(inst).x86_elf_tls_gd_get_addr(global_value);
+        let (tls_addr, _clobber) = match isa.flags().tls_model() {
+            TlsModel::None => panic!("tls_model flag is not set."),
+            TlsModel::ElfGd => func.dfg.replace(inst).x86_elf_tls_get_addr(global_value),
+            TlsModel::Macho => func.dfg.replace(inst).x86_macho_tls_get_addr(global_value),
+            model => unimplemented!("tls_value for tls model {:?}", model),
+        };
 
         func.dfg.change_to_alias(return_value, tls_addr);
     } else {
