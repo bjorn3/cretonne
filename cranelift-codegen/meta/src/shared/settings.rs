@@ -136,12 +136,7 @@ pub(crate) fn define() -> SettingGroup {
         r#"
             Defines the model used to perform TLS accesses.
         "#,
-        vec![
-            "none",
-            "elf_gd",
-            "macho",
-            "coff",
-        ],
+        vec!["none", "elf_gd", "macho", "coff"],
     );
 
     // Settings specific to the `baldrdash` calling convention.

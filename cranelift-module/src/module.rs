@@ -207,8 +207,7 @@ where
         self.decl.writable = self.decl.writable || writable;
         self.decl.align = self.decl.align.max(align);
         assert_eq!(
-            self.decl.tls,
-            tls,
+            self.decl.tls, tls,
             "Can't change TLS data object to normal or in the opposite way",
         );
     }

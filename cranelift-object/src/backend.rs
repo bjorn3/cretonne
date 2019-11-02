@@ -148,7 +148,11 @@ impl Backend for ObjectBackend {
         tls: bool,
         _align: Option<u8>,
     ) {
-        let kind = if tls { SymbolKind::Tls } else { SymbolKind::Data };
+        let kind = if tls {
+            SymbolKind::Tls
+        } else {
+            SymbolKind::Data
+        };
         let (scope, weak) = translate_linkage(linkage);
 
         if let Some(data) = self.data_objects[id] {
@@ -566,7 +570,11 @@ impl RelocSink for ObjectRelocSink {
                     BinaryFormat::Elf,
                     "ElfX86_64TlsGd is not supported for this file format"
                 );
-                (RelocationKind::Other(goblin::elf64::reloc::R_X86_64_TLSGD), RelocationEncoding::Generic, 32)
+                (
+                    RelocationKind::Other(goblin::elf64::reloc::R_X86_64_TLSGD),
+                    RelocationEncoding::Generic,
+                    32,
+                )
             }
             Reloc::MachOX86_64Tlv => {
                 assert_eq!(
@@ -574,7 +582,11 @@ impl RelocSink for ObjectRelocSink {
                     BinaryFormat::Macho,
                     "MachOX86_64Tlv is not supported for this file format"
                 );
-                (RelocationKind::Other(u32::from(goblin::mach::relocation::X86_64_RELOC_TLV)), RelocationEncoding::Generic, 32)
+                (
+                    RelocationKind::Other(u32::from(goblin::mach::relocation::X86_64_RELOC_TLV)),
+                    RelocationEncoding::Generic,
+                    32,
+                )
             }
             // FIXME
             _ => unimplemented!(),
