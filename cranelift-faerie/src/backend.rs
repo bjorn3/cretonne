@@ -405,18 +405,6 @@ impl<'a> CFIEncoder<'a> {
                         ))
                     }
                 }
-                ir::FrameLayoutChange::Preserve => {
-                    fd_entry.add_instruction(
-                        addr,
-                        CallFrameInstruction::RememberState,
-                    );
-                }
-                ir::FrameLayoutChange::Restore => {
-                    fd_entry.add_instruction(
-                        addr,
-                        CallFrameInstruction::RestoreState,
-                    );
-                }
             }
             ir::FrameLayoutChange::RegAt { reg, cfa_offset } => Some(CallFrameInstruction::Offset(
                 self.reg_map.translate_reg(*reg),
@@ -425,6 +413,8 @@ impl<'a> CFIEncoder<'a> {
             ir::FrameLayoutChange::ReturnAddressAt { cfa_offset } => Some(
                 CallFrameInstruction::Offset(self.reg_map.return_address(), *cfa_offset as i32),
             ),
+            ir::FrameLayoutChange::Preserve => Some(CallFrameInstruction::RememberState),
+            ir::FrameLayoutChange::Restore => Some(CallFrameInstruction::RestoreState),
         }
     }
 }
