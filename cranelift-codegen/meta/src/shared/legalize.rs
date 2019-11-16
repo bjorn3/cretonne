@@ -229,6 +229,16 @@ pub(crate) fn define(insts: &InstructionGroup, imm: &Immediates) -> TransformGro
         );
     }
 
+    /*for &(ty, ty_half) in &[(I64, I32), (I128, I64)] {
+        let inst = ireduce.bind(ty_half).bind(ty);
+        expand.legalize(
+            def!(a = inst(x)),
+            vec![
+                def!((a, xh) = isplit(x)),
+            ]
+        )
+    }*/
+
     for &bin_op in &[band, bor, bxor, band_not, bor_not, bxor_not] {
         narrow.legalize(
             def!(a = bin_op(x, y)),
