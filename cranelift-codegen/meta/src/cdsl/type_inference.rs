@@ -161,8 +161,8 @@ impl TypeEnvironment {
 
         // Check extra conditions for InTypeset constraints.
         if let Constraint::InTypeset(tv, _) = &constraint {
-            assert!(tv.base.is_none());
-            assert!(tv.name.starts_with("typeof_"));
+            assert!(tv.base.is_none(), "tv.base == {:?}", tv.base);
+            assert!(tv.name.starts_with("typeof_"), "tv.name == {}", tv.name);
         }
 
         self.constraints.push(constraint);
