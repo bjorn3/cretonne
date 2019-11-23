@@ -42,14 +42,14 @@ pub fn run(context: &mut Context, func: &mut Function, isa: &dyn TargetIsa) {
     let mut live_ranges: Vec<&LiveRange> = context.liveness().ranges().values().collect();
     live_ranges.sort_by(|a, b| func.layout.cmp(a.def(), b.def()));
 
-    let mut active: Vec<&LiveRange> = Vec::new();
-    for live_range in live_ranges {
-        expire_old_intervals(/*context,*/ func, &mut active, &mut unused_regs, &register_assignments, live_range);
-        if let Some(reg) = unused_regs.pop() {
-            register_assignments.insert(live_range.key(), reg);
-            insert_active(func, &mut active, live_range);
+    let mut active: Vec<&LiveRange> = Vec::new(); // active <- {}
+    for i in live_ranges { // foreach live interval i, in order of increasing start point
+        expire_old_intervals(/*context,*/ func, &mut active, &mut unused_regs, &register_assignments, i);
+        if let Some(reg) = unused_regs.pop() { // if length(active) != R
+            register_assignments.insert(i.key(), reg); // register[i] <- a register removed from pool of free registers
+            insert_active(func, &mut active, i); // add i to active, sorted by increasing end point
         } else {
-            spill_at_interval(/*context,*/ func, &mut active, &mut register_assignments, live_range);
+            spill_at_interval(/*context,*/ func, &mut active, &mut register_assignments, i);
         }
     }
 }
@@ -61,16 +61,13 @@ fn expire_old_intervals(
     register_assignments: &BTreeMap<Value, RegUnit>,
     i: &LiveRange,
 ) {
-    let mut idx = 0;
-    while idx < active.len() {
-        let j = active[idx];
-        // if >=
-        if func.layout.cmp(live_range_end(func, j), i.def()) != Ordering::Less {
-            idx += 1;
-            continue;
+    while !active.is_empty() { // foreach interval j in active, in order of increasing end point
+        let j = active[0];
+        if func.layout.cmp(live_range_end(func, j), i.def()) != Ordering::Less { // if endpoint[j]>=startpoint[i]
+            return;
         }
-        active.remove(idx);
-        unused_regs.push(register_assignments[&j.key()]);
+        active.remove(0); // remove j from active
+        unused_regs.push(register_assignments[&j.key()]); // add register[j] to pool of free registers
     }
 }
 
@@ -80,12 +77,12 @@ fn spill_at_interval<'a>(
     register_assignments: &mut BTreeMap<Value, RegUnit>,
     i: &'a LiveRange,
 ) {
-    let spill = *active.last().expect("Spilling => Register pressure => active.last().is_some()");
-    if func.layout.cmp(live_range_end(func, spill), live_range_end(func, i)) == Ordering::Greater {
-        assert!(register_assignments.insert(i.key(), register_assignments[&spill.key()]).is_none());
+    let spill = *active.last().expect("Spilling => Register pressure => active.last().is_some()"); // last interval in active
+    if func.layout.cmp(live_range_end(func, spill), live_range_end(func, i)) == Ordering::Greater { // if endpoint[spill] > endpoint[spill]
+        assert!(register_assignments.insert(i.key(), register_assignments[&spill.key()]).is_none()); // register[i] <- register[spill]
         // location[spill] <- new stack location
         active.pop().unwrap(); // remove spill from active
-        insert_active(func, active, i);
+        insert_active(func, active, i); // add i to active, sorted by increasing end point
     } else {
         // location[i] <- new stack location
     }
