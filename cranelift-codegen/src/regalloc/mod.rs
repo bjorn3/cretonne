@@ -8,6 +8,7 @@ mod coalescing;
 mod coloring;
 mod context;
 mod diversion;
+mod linear_scan;
 mod live_value_tracker;
 mod liveness;
 mod liverange;

@@ -118,6 +118,7 @@ use crate::entity::SparseMapValue;
 use crate::ir::{Ebb, ExpandedProgramPoint, Inst, Layout, ProgramOrder, ProgramPoint, Value};
 use crate::regalloc::affinity::Affinity;
 use core::cmp::Ordering;
+use core::fmt;
 use core::marker::PhantomData;
 use smallvec::SmallVec;
 
@@ -151,6 +152,7 @@ use smallvec::SmallVec;
 pub type LiveRange = GenericLiveRange<Layout>;
 
 // See comment of liveins below.
+#[derive(Debug)]
 pub struct Interval {
     begin: Ebb,
     end: Inst,
@@ -189,6 +191,19 @@ pub struct GenericLiveRange<PO: ProgramOrder> {
     liveins: SmallVec<[Interval; 2]>,
 
     po: PhantomData<*const PO>,
+}
+
+// Manual implementation to prevent `PO: Debug` bound.
+impl<PO: ProgramOrder> fmt::Debug for GenericLiveRange<PO> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("LiveRange")
+            .field("value", &self.value)
+            .field("affinity", &self.affinity)
+            .field("def_begin", &self.def_begin)
+            .field("def_end", &self.def_end)
+            .field("liveins", &self.liveins)
+            .finish()
+    }
 }
 
 /// A simple helper macro to make comparisons more natural to read.

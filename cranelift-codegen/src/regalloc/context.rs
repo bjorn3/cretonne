@@ -104,6 +104,8 @@ impl Context {
         // Pass: Liveness analysis.
         self.liveness.compute(isa, func, cfg);
 
+        super::linear_scan::run(self, func, isa);
+
         if isa.flags().enable_verifier() {
             let ok = verify_liveness(isa, func, cfg, &self.liveness, &mut errors).is_ok();
 
