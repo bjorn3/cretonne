@@ -49,13 +49,12 @@ pub fn run(context: &mut Context, func: &mut Function, isa: &dyn TargetIsa) {
             register_assignments.insert(live_range.key(), reg);
             insert_active(func, &mut active, live_range);
         } else {
-            spill_at_interval(/*context,*/ func, &mut active, &mut unused_regs, &mut register_assignments, live_range);
+            spill_at_interval(/*context,*/ func, &mut active, &mut register_assignments, live_range);
         }
     }
 }
 
 fn expire_old_intervals(
-    //context: &mut Context,
     func: &mut Function,
     active: &mut Vec<&LiveRange>,
     unused_regs: &mut Vec<RegUnit>,
@@ -76,19 +75,16 @@ fn expire_old_intervals(
 }
 
 fn spill_at_interval<'a>(
-    //context: &mut Context,
     func: &mut Function,
     active: &mut Vec<&'a LiveRange>,
-    unused_regs: &mut Vec<RegUnit>,
     register_assignments: &mut BTreeMap<Value, RegUnit>,
     i: &'a LiveRange,
 ) {
     let spill = *active.last().expect("Spilling => Register pressure => active.last().is_some()");
     if func.layout.cmp(live_range_end(func, spill), live_range_end(func, i)) == Ordering::Greater {
-        register_assignments.insert(i.key(), register_assignments[&spill.key()]);
+        assert!(register_assignments.insert(i.key(), register_assignments[&spill.key()]).is_none());
         // location[spill] <- new stack location
         active.pop().unwrap(); // remove spill from active
-
         insert_active(func, active, i);
     } else {
         // location[i] <- new stack location
