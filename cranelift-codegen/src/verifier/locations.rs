@@ -3,8 +3,7 @@
 use crate::flowgraph::ControlFlowGraph;
 use crate::ir;
 use crate::isa;
-use crate::regalloc::liveness::Liveness;
-use crate::regalloc::RegDiversions;
+use crate::regalloc::{Liveness, RegDiversions};
 use crate::timing;
 use crate::verifier::{VerifierErrors, VerifierStepResult};
 

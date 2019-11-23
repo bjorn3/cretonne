@@ -4,8 +4,7 @@ use crate::flowgraph::{BasicBlock, ControlFlowGraph};
 use crate::ir::entities::AnyEntity;
 use crate::ir::{ExpandedProgramPoint, Function, ProgramPoint, Value};
 use crate::isa::TargetIsa;
-use crate::regalloc::liveness::Liveness;
-use crate::regalloc::liverange::LiveRange;
+use crate::regalloc::{LiveRange, Liveness};
 use crate::timing;
 use crate::verifier::{VerifierErrors, VerifierStepResult};
 
