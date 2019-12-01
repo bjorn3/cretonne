@@ -571,7 +571,7 @@ impl RelocSink for ObjectRelocSink {
                     "ElfX86_64TlsGd is not supported for this file format"
                 );
                 (
-                    RelocationKind::Other(goblin::elf64::reloc::R_X86_64_TLSGD),
+                    RelocationKind::Elf(goblin::elf64::reloc::R_X86_64_TLSGD),
                     RelocationEncoding::Generic,
                     32,
                 )
@@ -583,7 +583,10 @@ impl RelocSink for ObjectRelocSink {
                     "MachOX86_64Tlv is not supported for this file format"
                 );
                 (
-                    RelocationKind::Other(u32::from(goblin::mach::relocation::X86_64_RELOC_TLV)),
+                    RelocationKind::MachO {
+                        value: goblin::mach::relocation::X86_64_RELOC_TLV,
+                        relative: true,
+                    },
                     RelocationEncoding::Generic,
                     32,
                 )
