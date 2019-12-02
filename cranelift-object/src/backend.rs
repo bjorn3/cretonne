@@ -548,7 +548,7 @@ impl RelocSink for ObjectRelocSink {
         offset: CodeOffset,
         reloc: Reloc,
         name: &ir::ExternalName,
-        addend: Addend,
+        mut addend: Addend,
     ) {
         let (kind, encoding, size) = match reloc {
             Reloc::Abs4 => (RelocationKind::Absolute, RelocationEncoding::Generic, 32),
@@ -582,6 +582,7 @@ impl RelocSink for ObjectRelocSink {
                     BinaryFormat::Macho,
                     "MachOX86_64Tlv is not supported for this file format"
                 );
+                addend += 4; // X86_64_RELOC_TLV has an implicit addend of -4
                 (
                     RelocationKind::MachO {
                         value: goblin::mach::relocation::X86_64_RELOC_TLV,
