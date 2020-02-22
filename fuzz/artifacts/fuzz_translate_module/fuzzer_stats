@@ -1,0 +1,28 @@
+start_time        : 1582392149
+last_update       : 1582392742
+fuzzer_pid        : 44924
+cycles_done       : 0
+execs_done        : 38742
+execs_per_sec     : 86.48
+paths_total       : 2110
+paths_favored     : 76
+paths_found       : 274
+paths_imported    : 0
+max_depth         : 2
+cur_path          : 12
+pending_favs      : 76
+pending_total     : 2110
+variable_paths    : 432
+stability         : 99.85%
+bitmap_cvg        : 23.71%
+unique_crashes    : 0
+unique_hangs      : 0
+last_path         : 1582392741
+last_crash        : 0
+last_hang         : 0
+execs_since_crash : 38742
+exec_timeout      : 300
+afl_banner        : fuzz_translate_module
+afl_version       : 2.52b
+target_mode       : persistent deferred 
+command_line      : /Users/bjorn/.local/share/afl.rs/rustc-1.41.0-5e1a799/afl.rs-0.6.0/afl/bin/afl-fuzz -i corpus/fuzz_translate_module -o artifacts/fuzz_translate_module target/debug/fuzz_translate_module
